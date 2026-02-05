@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.Maui.Controls"
+             xmlns:local="clr-namespace:Cerosoft.AirPoint.Client"
+             x:Class="Cerosoft.AirPoint.Client.MainPage"
+             BackgroundColor="#000000"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid>
+        <Editor x:Name="HiddenKeyboardInput" 
+                IsVisible="True" 
+                Opacity="0" 
+                HeightRequest="1" 
+                WidthRequest="1"
+                TranslationX="1000"
+                TextChanged="OnKeyboardTextChanged"
+                Completed="OnKeyboardCompleted"
+                Keyboard="Text"
+                AutoSize="Disabled"/>
+
+        <Grid x:Name="AppContent" BackgroundColor="#000000">
+
+            <Grid x:Name="ScannerGrid" IsVisible="True" BackgroundColor="#000000">
+                <zxing:CameraBarcodeReaderView x:Name="cameraBarcodeReaderView" BarcodesDetected="CameraBarcodeReaderView_BarcodesDetected" IsDetecting="True" IsTorchOn="False"/>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="280"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="280"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <BoxView Grid.Row="0" Grid.ColumnSpan="3" Color="#DD000000"/>
+                    <BoxView Grid.Row="1" Grid.Column="0" Color="#DD000000"/>
+                    <BoxView Grid.Row="1" Grid.Column="2" Color="#DD000000"/>
+                    <BoxView Grid.Row="2" Grid.ColumnSpan="3" Color="#DD000000"/>
+
+                    <Path Grid.Row="1" Grid.Column="1" Fill="#DD000000" StrokeThickness="0" HorizontalOptions="Fill" VerticalOptions="Fill">
+                        <Path.Data>
+                            <GeometryGroup FillRule="EvenOdd">
+                                <RectangleGeometry Rect="0,0,280,280" />
+                                <RoundRectangleGeometry Rect="0,0,280,280" CornerRadius="24" />
+                            </GeometryGroup>
+                        </Path.Data>
+                    </Path>
+
+                    <Border Grid.Row="1" Grid.Column="1" Stroke="#00E676" StrokeThickness="3" BackgroundColor="Transparent" StrokeShape="RoundRectangle 24">
+                        <BoxView x:Name="ScanLine" HeightRequest="2" Color="#00E676" VerticalOptions="Start" Opacity="0.8">
+                            <BoxView.Shadow>
+                                <Shadow Brush="#00E676" Radius="20" Opacity="1.0"/>
+                            </BoxView.Shadow>
+                        </BoxView>
+                    </Border>
+
+                    <Grid Grid.Row="0" Grid.ColumnSpan="3" Padding="25" ColumnDefinitions="Auto, *">
+                        <ImageButton Source="back_button.png" 
+                                     HorizontalOptions="Start" VerticalOptions="Start" 
+                                     BackgroundColor="#1E1E1E" 
+                                     HeightRequest="50" WidthRequest="50" 
+                                     CornerRadius="25"
+                                     Padding="12"
+                                     BorderColor="#333" BorderWidth="1"
+                                     Clicked="OnBackClicked">
+                            <ImageButton.Shadow>
+                                <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.5"/>
+                            </ImageButton.Shadow>
+                        </ImageButton>
+
+                        <Label x:Name="ModeTitleLabel" Text="Align QR Code" TextColor="White" FontSize="18" FontAttributes="Bold" 
+                               Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" Margin="-50,0,0,0"/>
+                    </Grid>
+
+                    <Label Grid.Row="2" Grid.ColumnSpan="3" Text="Searching..." TextColor="#888" FontSize="14" 
+                           HorizontalOptions="Center" VerticalOptions="Start" Margin="0,20,0,0"/>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="TrackpadGrid" IsVisible="False" BackgroundColor="#000000" RowDefinitions="Auto,*,Auto">
+
+                <Grid Grid.Row="0" BackgroundColor="#000000" Padding="20,15" ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                        <Label Text="AirPoint" TextColor="White" FontAttributes="Bold" FontSize="22" CharacterSpacing="1"/>
+                        <Label x:Name="StatusLabel" Text="Connected" TextColor="#00E676" FontSize="12" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <HorizontalStackLayout Grid.Column="1" Spacing="15" VerticalOptions="Center">
+                        <ImageButton Source="shutdown.png" HeightRequest="44" WidthRequest="44" BackgroundColor="#1E1E1E" CornerRadius="22" Padding="12" Clicked="OnPowerClicked"/>
+                        <ImageButton Source="settings.png" HeightRequest="44" WidthRequest="44" BackgroundColor="#1E1E1E" CornerRadius="22" Padding="12" Clicked="OnSettingsClicked"/>
+                        <Button Text="✕" BackgroundColor="#1E1E1E" TextColor="White" HeightRequest="44" WidthRequest="44" CornerRadius="22" Padding="0" Clicked="OnDisconnectClicked" BorderColor="#333" BorderWidth="1"/>
+                    </HorizontalStackLayout>
+                </Grid>
+
+                <Border Grid.Row="1" HeightRequest="360" VerticalOptions="Center" Margin="25,0" BackgroundColor="#151515" Stroke="#333333" StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="24"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0,10" Radius="20" Opacity="0.5"/>
+                    </Border.Shadow>
+                    <Grid ColumnDefinitions="*, 60">
+                        <local:TouchpadView Grid.Column="0" Color="Transparent" x:Name="PrecisionTouchSurface"/>
+                        <BoxView Grid.Column="1" Color="#222" WidthRequest="1" HorizontalOptions="Start"/>
+                        <Grid Grid.Column="1" BackgroundColor="#151515">
+                            <Label Text="↕" TextColor="#444" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="2" BackgroundColor="#000000" Padding="20,10,20,30" RowDefinitions="Auto, Auto" RowSpacing="20">
+                    <CollectionView x:Name="ShortcutsList" Grid.Row="0" ItemsLayout="HorizontalList" HeightRequest="50">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="local:ShortcutItem">
+                                <Border Stroke="#333" StrokeThickness="1" BackgroundColor="#1E1E1E" Padding="15,0" HeightRequest="40" Margin="0,0,10,0">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12"/>
+                                    </Border.StrokeShape>
+                                    <Label Text="{Binding Name}" TextColor="#DDD" FontSize="13" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center"/>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnShortcutTapped"/>
+                                    </Border.GestureRecognizers>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="15">
+                        <Button Text="Left" Grid.Column="0" BackgroundColor="#1E1E1E" TextColor="White" FontAttributes="Bold" HeightRequest="65" CornerRadius="16" Clicked="OnLeftClick" BorderColor="#333" BorderWidth="1"/>
+                        <Button Text="Right" Grid.Column="1" BackgroundColor="#1E1E1E" TextColor="White" FontAttributes="Bold" HeightRequest="65" CornerRadius="16" Clicked="OnRightClick" BorderColor="#333" BorderWidth="1"/>
+                    </Grid>
+                </Grid>
+
+                <VerticalStackLayout Grid.Row="2" HorizontalOptions="End" VerticalOptions="Start" Margin="0,-100,10,0" Spacing="8">
+
+                    <ImageButton Source="keyboard.png" BackgroundColor="#1E1E1E" Padding="8"
+                                 HeightRequest="44" WidthRequest="44" CornerRadius="22"
+                                 Shadow="{Shadow Brush=Black, Offset='0,4', Radius=8, Opacity=0.3}"
+                                 BorderColor="#333" BorderWidth="1"
+                                 Clicked="OnKeyboardClicked"/>
+
+                    <ImageButton Source="pen.png" BackgroundColor="#00E676" Padding="14"
+                                 HeightRequest="56" WidthRequest="56" CornerRadius="28"
+                                 Shadow="{Shadow Brush=Black, Offset='0,4', Radius=8, Opacity=0.3}"
+                                 Clicked="OnEditShortcutsClicked"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <Grid x:Name="PopupOverlay" IsVisible="False" BackgroundColor="#CC000000" ZIndex="100">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnDismissPopup"/>
+                </Grid.GestureRecognizers>
+
+                <Border x:Name="ManageShortcutsCard" IsVisible="False" VerticalOptions="Center" HorizontalOptions="Center" WidthRequest="340" BackgroundColor="#1E1E1E" Stroke="#333" StrokeThickness="1" Padding="0">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="20"/>
+                    </Border.StrokeShape>
+                    <Grid RowDefinitions="Auto, *, Auto">
+                        <Label Grid.Row="0" Text="Manage Shortcuts" TextColor="White" FontSize="18" FontAttributes="Bold" Margin="20,20,20,10" HorizontalOptions="Center"/>
+
+                        <CollectionView Grid.Row="1" x:Name="ManageList" HeightRequest="200" Margin="0,10">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="local:ShortcutItem">
+                                    <Grid ColumnDefinitions="*, Auto, Auto, Auto" Padding="15,8" ColumnSpacing="8">
+                                        <Label Text="{Binding Name}" TextColor="#DDD" VerticalOptions="Center" FontAttributes="Bold"/>
+                                        <Button Grid.Column="1" Text="▲" BackgroundColor="Transparent" TextColor="#00E676" HeightRequest="36" WidthRequest="36" Padding="0" FontSize="12" Clicked="OnMoveUpClicked" CommandParameter="{Binding .}"/>
+                                        <Button Grid.Column="2" Text="▼" BackgroundColor="Transparent" TextColor="#00E676" HeightRequest="36" WidthRequest="36" Padding="0" FontSize="12" Clicked="OnMoveDownClicked" CommandParameter="{Binding .}"/>
+                                        <Button Grid.Column="3" Text="✕" BackgroundColor="#2A1111" TextColor="#FF5252" HeightRequest="36" WidthRequest="36" Padding="0" CornerRadius="8" Clicked="OnDeleteShortcutClicked" CommandParameter="{Binding .}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                        <VerticalStackLayout Grid.Row="2" Spacing="10" BackgroundColor="#151515" Padding="20">
+                            <Label Text="Add New" TextColor="#666" FontSize="12" FontAttributes="Bold"/>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <Border Stroke="#333" BackgroundColor="#1E1E1E" HeightRequest="45" StrokeShape="RoundRectangle 8" Padding="10,0">
+                                    <Entry x:Name="NewShortcutName" Placeholder="Name" PlaceholderColor="#555" TextColor="White" VerticalOptions="Center"/>
+                                </Border>
+                                <Border Stroke="#333" BackgroundColor="#1E1E1E" HeightRequest="45" StrokeShape="RoundRectangle 8" Padding="10,0" Grid.Column="1">
+                                    <Entry x:Name="NewShortcutUrl" Placeholder="Target/URL" PlaceholderColor="#555" TextColor="White" VerticalOptions="Center"/>
+                                </Border>
+                            </Grid>
+                            <Button Text="Add Shortcut" BackgroundColor="#00E676" TextColor="Black" FontAttributes="Bold" CornerRadius="10" Clicked="OnAddInsideManageClicked"/>
+                            <Button Text="Done" BackgroundColor="Transparent" TextColor="#AAA" Margin="0,5,0,0" Clicked="OnDismissPopup"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="PowerMenuCard" IsVisible="False" VerticalOptions="End" HorizontalOptions="Fill" Margin="20,0,20,40" BackgroundColor="#1E1E1E" Stroke="#333" StrokeThickness="1" Padding="25">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="24"/>
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="Power Options" TextColor="White" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,0,0,10"/>
+                        <Button Text="Lock PC" BackgroundColor="#252525" TextColor="White" HeightRequest="55" CornerRadius="12" BorderColor="#333" BorderWidth="1" Clicked="OnLockClicked"/>
+                        <Button Text="Restart" BackgroundColor="#252525" TextColor="White" HeightRequest="55" CornerRadius="12" BorderColor="#333" BorderWidth="1" Clicked="OnRestartClicked"/>
+                        <Button Text="Shutdown" BackgroundColor="#3D1A1A" TextColor="#FF5252" FontAttributes="Bold" HeightRequest="55" CornerRadius="12" BorderColor="#FF5252" BorderWidth="1" Clicked="OnShutdownConfirmClicked"/>
+                        <Button Text="Cancel" BackgroundColor="Transparent" TextColor="#AAA" Margin="0,10,0,0" Clicked="OnDismissPopup"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="ConnectionLostCard" IsVisible="False" VerticalOptions="Center" HorizontalOptions="Center" WidthRequest="320" BackgroundColor="#1E1E1E" Stroke="#FF5252" StrokeThickness="1" Padding="25">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="24"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#FF5252" Radius="30" Opacity="0.2"/>
+                    </Border.Shadow>
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="⚠" TextColor="#FF5252" FontSize="40" HorizontalOptions="Center"/>
+                        <Label Text="Connection Lost" TextColor="White" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label x:Name="DisconnectReasonLabel" Text="The server stopped responding." TextColor="#AAA" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
+
+                        <Button Text="Return to Home" BackgroundColor="#3D1A1A" TextColor="#FF5252" FontAttributes="Bold" HeightRequest="50" CornerRadius="12" BorderColor="#FF5252" BorderWidth="1" Margin="0,10,0,0" Clicked="OnConnectionLostDismissed"/>
+                    </VerticalStackLayout>
+                </Border>
+
+            </Grid>
+        </Grid>
+
+        <local:SettingsPage x:Name="SettingsOverlay" IsVisible="False" InputTransparent="False" ZIndex="200"/>
+
+    </Grid>
+</ContentPage>

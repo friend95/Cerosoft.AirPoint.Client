@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Cerosoft.AirPoint.Client.HomePage"
+             BackgroundColor="#000000"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="*,Auto" Padding="25">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="30" VerticalOptions="Center">
+
+            <VerticalStackLayout Spacing="5">
+                <Label Text="Welcome to" TextColor="#888" FontSize="18" CharacterSpacing="1"/>
+                <Label Text="AirPoint" TextColor="White" FontSize="48" FontAttributes="Bold" CharacterSpacing="1.5"/>
+                <Label Text="Seamless Remote Control" TextColor="#00E676" FontSize="16" FontAttributes="Bold"/>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="15" Margin="0,20,0,0">
+
+                <Border Stroke="#333" StrokeThickness="1" BackgroundColor="#121212" Padding="20" HeightRequest="100">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="60, *">
+                        <Border Grid.Column="0" BackgroundColor="#1E1E1E" HeightRequest="50" WidthRequest="50" StrokeShape="RoundRectangle 25" StrokeThickness="0">
+                            <Label Text="W" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Connect via Wi-Fi" TextColor="White" FontSize="16" FontAttributes="Bold"/>
+                            <Label Text="High Speed • Low Latency" TextColor="#666" FontSize="12"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnWifiClicked"/>
+                    </Border.GestureRecognizers>
+                </Border>
+
+                <Border Stroke="#333" StrokeThickness="1" BackgroundColor="#121212" Padding="20" HeightRequest="100" Opacity="0.8">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="60, *">
+                        <Border Grid.Column="0" BackgroundColor="#1E1E1E" HeightRequest="50" WidthRequest="50" StrokeShape="RoundRectangle 25" StrokeThickness="0">
+                            <Label Text="B" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Connect via Bluetooth" TextColor="White" FontSize="16" FontAttributes="Bold"/>
+                            <Label Text="Portable • No Network Needed" TextColor="#666" FontSize="12"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBluetoothClicked"/>
+                    </Border.GestureRecognizers>
+                </Border>
+
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="4" HorizontalOptions="Center" Padding="0,0,0,20">
+            <Label Text="v1.1.0 (Stable)" TextColor="#555" FontSize="12" HorizontalOptions="Center"/>
+
+            <HorizontalStackLayout Spacing="4" HorizontalOptions="Center">
+                <Label Text="Powered by" TextColor="#444" FontSize="12"/>
+                <Label Text="CeroSoft" TextColor="#00E676" FontSize="12" FontAttributes="Bold"/>
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
