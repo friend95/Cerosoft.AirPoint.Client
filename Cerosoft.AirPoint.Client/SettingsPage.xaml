@@ -81,7 +81,7 @@
                                     <Label Text="Scrolling Speed" TextColor="White" FontAttributes="Bold"/>
                                     <Label x:Name="ScrollValLabel" Text="1.0x" TextColor="#00E676" FontAttributes="Bold" Grid.Column="1"/>
                                 </Grid>
-                                <Slider x:Name="ScrollSlider" Minimum="0.5" Maximum="3.0" Value="1.0" ThumbColor="#00E676" MinimumTrackColor="#00E676" MaximumTrackColor="#333"/>
+                                <Slider x:Name="ScrollSlider" Minimum="0.1" Maximum="3.0" Value="1.0" ThumbColor="#00E676" MinimumTrackColor="#00E676" MaximumTrackColor="#333"/>
                             </VerticalStackLayout>
                         </Border>
                         <Border Stroke="#333" StrokeThickness="1" BackgroundColor="#121212" Padding="20" StrokeShape="RoundRectangle 16">
@@ -90,7 +90,7 @@
                                     <Label Text="Zooming Speed" TextColor="White" FontAttributes="Bold"/>
                                     <Label x:Name="ZoomValLabel" Text="1.0x" TextColor="#00E676" FontAttributes="Bold" Grid.Column="1"/>
                                 </Grid>
-                                <Slider x:Name="ZoomSlider" Minimum="0.5" Maximum="3.0" Value="1.0" ThumbColor="#00E676" MinimumTrackColor="#00E676" MaximumTrackColor="#333"/>
+                                <Slider x:Name="ZoomSlider" Minimum="0.1" Maximum="3.0" Value="1.0" ThumbColor="#00E676" MinimumTrackColor="#00E676" MaximumTrackColor="#333"/>
                             </VerticalStackLayout>
                         </Border>
                     </VerticalStackLayout>
