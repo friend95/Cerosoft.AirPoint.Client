@@ -4,12 +4,12 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices; // Aggressive Inlining
 using System.Text.Json;
 using ZXing.Net.Maui;
+using Microsoft.Maui.ApplicationModel; // Required for Permissions
 
 // Modernization: File-scoped namespace (C# 10+)
 namespace Cerosoft.AirPoint.Client;
 
-// Industry Grade: Use Record for DTOs (Data Transfer Objects) for immutability and performance where appropriate.
-// If mutability is required for TwoWay binding, a standard class is kept but optimized.
+// Industry Grade: Use Record for DTOs (Data Transfer Objects) for immutability and performance.
 public class ShortcutItem
 {
     public string Name { get; set; } = string.Empty;
@@ -19,7 +19,8 @@ public class ShortcutItem
 public partial class MainPage : ContentPage
 {
     // Industry Grade: Readonly dependencies
-    private readonly AirPointClient _client = new();
+    // CHANGE 1: Use Interface instead of concrete class for seamless Strategy Pattern
+    private readonly IAirPointClient _client;
     private readonly bool _isWifiMode;
 
     // State Flags
@@ -35,9 +36,7 @@ public partial class MainPage : ContentPage
     public ObservableRangeCollection<ShortcutItem> Shortcuts { get; set; } = [];
 
     // --- SENSITIVITY CONSTANTS (TUNED FOR INDUSTRY FEEL) ---
-    // Reduced from 15.0f to 4.0f for smoother control prevents "jumpy" zoom
     private const float BaseZoomMultiplier = 4.0f;
-    // Reduced from 3.5f to 1.2f and INVERTED (Positive) for "Natural" scrolling
     private const float BaseScrollMultiplier = 1.2f;
 
     public MainPage(bool isWifi)
@@ -45,9 +44,22 @@ public partial class MainPage : ContentPage
         InitializeComponent();
         _isWifiMode = isWifi;
 
+        // CHANGE 2: Dependency Injection Strategy
+        // Selects the appropriate client implementation based on the mode
+        if (_isWifiMode)
+        {
+            // FIX: Explicit cast added. 
+            // IMPORTANT: Ensure 'public class AirPointClient : IAirPointClient' is defined in AirPointClient.cs
+            _client = (IAirPointClient)new AirPointClient();
+        }
+        else
+        {
+            _client = new AirPointBluetoothClient();
+        }
+
         // Lifecycle Hardening (Audit Section 5.2): 
         // Minimal logic in Constructor. Defer UI interaction to OnHandlerChanged/OnAppearing.
-        
+
         // Resilience: Wire up connection events safely
         _client.ConnectionLost += OnConnectionLost;
 
@@ -134,7 +146,7 @@ public partial class MainPage : ContentPage
     private void OnKeyboardClicked(object sender, EventArgs e)
     {
         Haptic();
-        
+
         // Fix IDE0031: Simplify null check with Pattern Matching
         if (HiddenKeyboardInput is { } input)
         {
@@ -202,10 +214,10 @@ public partial class MainPage : ContentPage
         if (newLen > 200)
         {
             _suppressTextChanged = true;
-            
+
             // Fix IDE0031: Null-safe property setter pattern
             if (HiddenKeyboardInput is { } input) input.Text = string.Empty;
-            
+
             _previousInput = string.Empty;
             _suppressTextChanged = false;
         }
@@ -237,7 +249,7 @@ public partial class MainPage : ContentPage
             }
 
             if (DisconnectReasonLabel is { } reasonLabel) reasonLabel.Text = reason;
-            
+
             // Toggle Visibility Safely
             if (PopupOverlay is { } popup) popup.IsVisible = true;
             if (ManageShortcutsCard is { } manage) manage.IsVisible = false;
@@ -440,12 +452,12 @@ public partial class MainPage : ContentPage
     private async void OnNativeScroll(float dy)
     {
         if (!SettingsPage.MasterGesturesEnabled || !SettingsPage.ScrollEnabled) return;
-        
+
         // OPTIMIZATION: 
         // 1. Removed Negative sign to invert direction (Natural Scrolling)
         // 2. Reduced multiplier to 1.2f (was 3.5f) for finer control
         float amount = dy * BaseScrollMultiplier * SettingsPage.ScrollSensitivity;
-        
+
         await _client.SendScroll(amount);
     }
 
@@ -469,7 +481,7 @@ public partial class MainPage : ContentPage
     {
         float scaledX = dx * SettingsPage.CursorSensitivity;
         float scaledY = dy * SettingsPage.CursorSensitivity;
-        
+
         // Direct call, no validation logic here to block the thread
         _client.QueueMove(scaledX, scaledY);
     }
@@ -524,8 +536,29 @@ public partial class MainPage : ContentPage
 
     private void SaveShortcuts() => Preferences.Set("SavedShortcuts", JsonSerializer.Serialize(Shortcuts));
 
-    // --- SCANNING LOGIC ---
+    // --- HELPER: PERMISSION CHECK ---
+    private async Task<bool> EnsureBluetoothPermissionsAsync()
+    {
+        if (_isWifiMode) return true;
 
+        // FIX: Check permissions BEFORE doing anything Bluetooth related.
+        var status = await Permissions.CheckStatusAsync<BluetoothConnectPermission>();
+        if (status != PermissionStatus.Granted)
+        {
+            status = await Permissions.RequestAsync<BluetoothConnectPermission>();
+            if (status != PermissionStatus.Granted)
+            {
+                // FIX CS0618: Use DisplayAlertAsync
+                await DisplayAlertAsync("Permission Required", "Bluetooth permission is needed to connect.", "OK");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // --- SCANNING LOGIC (UPDATED) ---
+
+    // CHANGE 3: Update Scanning Logic to support both Wi-Fi and Bluetooth
     private void CameraBarcodeReaderView_BarcodesDetected(object sender, BarcodeDetectionEventArgs e)
     {
         if (!_isScanning) return;
@@ -539,23 +572,50 @@ public partial class MainPage : ContentPage
         _isScanning = false;
         Dispatcher.Dispatch(async () =>
         {
-            if (_isWifiMode && result.Value.Contains(':')) await ConnectWifi(result.Value);
-            else if (!_isWifiMode && result.Value == "BLUETOOTH_MODE") await ConnectBluetooth();
-            else ShowError();
-        });
-    }
+            string content = result.Value;
 
-    private async Task ConnectWifi(string content)
-    {
-        try
-        {
-            string[] parts = content.Split(':');
-
-            if (parts.Length == 2 && int.TryParse(parts[1], out int port))
+            if (_isWifiMode && content.Contains(':') && content.Length < 25)
             {
-                if (await _client.ConnectAsync(parts[0], port))
+                await ConnectClient(content); // Wi-Fi expects IP:PORT
+            }
+            // Bluetooth MAC Address Regex check (Simple length check for now)
+            else if (!_isWifiMode && content.Length == 17 && content.Contains(':'))
+            {
+                // CRITICAL FIX: Check permissions BEFORE connecting
+                if (await EnsureBluetoothPermissionsAsync())
                 {
-                    ShowTrackpad();
+                    await ConnectClient(content); // Bluetooth expects MAC
+                }
+                else
+                {
+                    ShowError();
+                }
+            }
+            // Bluetooth Mode: "BLUETOOTH_MODE" Magic String
+            else if (!_isWifiMode && content == "BLUETOOTH_MODE")
+            {
+                // CRITICAL FIX: Check permissions BEFORE finding paired devices
+                // This prevents the SecurityException when calling getBondedDevices()
+                if (await EnsureBluetoothPermissionsAsync())
+                {
+                    // The user scanned the server QR, but it doesn't have the MAC.
+                    // We must find the paired device ourselves.
+                    if (_client is AirPointBluetoothClient)
+                    {
+                        // FIX CS0176: Call static method using Class Name, not instance variable
+                        string? pairedMac = AirPointBluetoothClient.FindPairedDevice();
+
+                        if (pairedMac is not null)
+                        {
+                            await ConnectClient(pairedMac);
+                        }
+                        else
+                        {
+                            // FIX CS0618: Use DisplayAlertAsync
+                            await DisplayAlertAsync("Pairing Required", "Please pair your phone with the PC in Android Bluetooth Settings first, then scan again.", "OK");
+                            ShowError();
+                        }
+                    }
                 }
                 else
                 {
@@ -566,16 +626,28 @@ public partial class MainPage : ContentPage
             {
                 ShowError();
             }
-        }
-        catch { ShowError(); }
+        });
     }
 
-    private async Task ConnectBluetooth()
+    // Unified Connection Method
+    private async Task ConnectClient(string address)
     {
-        // Fix: Removed private DisplayAlertAsync wrapper and now calling base.DisplayAlertAsync directly.
-        // This resolves 'Page.DisplayAlert is obsolete' and the hiding warning.
-        await DisplayAlertAsync("Info", "Bluetooth Soon", "OK");
-        ShowError();
+        // Permission Check for Android 12+ (API 31+)
+        // Double-check permissions (redundant but safe)
+        if (!await EnsureBluetoothPermissionsAsync())
+        {
+            ShowError();
+            return;
+        }
+
+        if (await _client.ConnectAsync(address))
+        {
+            ShowTrackpad();
+        }
+        else
+        {
+            ShowError();
+        }
     }
 
     private void ShowTrackpad()
@@ -583,22 +655,22 @@ public partial class MainPage : ContentPage
         // Fix IDE0031: Null-safe setters
         if (ScannerGrid is { } scanner) scanner.IsVisible = false;
         if (TrackpadGrid is { } trackpad) trackpad.IsVisible = true;
-        
+
         if (cameraBarcodeReaderView is { } camera) camera.IsDetecting = false;
-        
+
         try { _hapticService?.Perform(HapticFeedbackType.LongPress); } catch { }
     }
 
-    private void ShowError() 
-    { 
-        _isScanning = true; 
-        Haptic(); 
-        Task.Run(StartScanAnimation); 
+    private void ShowError()
+    {
+        _isScanning = true;
+        Haptic();
+        Task.Run(StartScanAnimation);
     }
 
-    private void Haptic() 
-    { 
-        try { _hapticService?.Perform(HapticFeedbackType.Click); } catch { } 
+    private void Haptic()
+    {
+        try { _hapticService?.Perform(HapticFeedbackType.Click); } catch { }
     }
 
     private async Task StartScanAnimation()
@@ -641,14 +713,31 @@ public class ObservableRangeCollection<T> : ObservableCollection<T>
 
         Items.Clear();
         foreach (var i in collection) Items.Add(i);
-        
+
         // Fire strict notification to reset UI binding efficiently
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
     }
 }
 
-public static class ClientExtensions
+// FIX: Custom Permission Class for Android 12+ (API 31)
+public class BluetoothConnectPermission : Permissions.BasePlatformPermission
 {
-    // Placeholder to satisfy the original code structure if AirPointClient definition is external
-    public static bool IsConnected(this AirPointClient _) => true;
+#if ANDROID
+    public override (string androidPermission, bool isRuntime)[] RequiredPermissions
+    {
+        get
+        {
+            // CA1416 Fix: Guard API 31+ permissions with a runtime version check.
+            if (OperatingSystem.IsAndroidVersionAtLeast(31))
+            {
+                return
+                [
+                    (Android.Manifest.Permission.BluetoothConnect, true),
+                    (Android.Manifest.Permission.BluetoothScan, true)
+                ];
+            }
+            return [];
+        }
+    }
+#endif
 }
